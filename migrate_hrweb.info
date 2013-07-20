@@ -1,0 +1,14 @@
+name = "HRWeb D6 to D7 migration"
+description = "Migrate content from D6 site to D7"
+package = "Migration"
+core = 7.x
+;hidden = TRUE
+version = "7.x-0.1"
+
+dependencies[] = migrate
+dependencies[] = migrate_d2d
+
+files[] = node.inc
+
+
+

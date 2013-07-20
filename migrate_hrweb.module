@@ -1,0 +1,243 @@
+<?php
+
+/**
+ * This is example code for a Drupal 6 to Drupal 7 migration. This won't actually
+ * work without defining the referenced vocabularies, content types, and fields
+ * on each side.
+ */
+
+/**
+ * Implements hook_flush_caches().
+ */
+function migrate_hrweb_flush_caches() {
+  migrate_hrweb_register_migrations();
+}
+
+/**
+ * Translate between D6 input format id and D7 text format name.
+ */
+function migrate_hrweb_get_text_format($format) {
+  $output = '';
+
+  switch ($format) {
+    case 1:
+      //D6: filtered html
+      $output = 'editor'; //html for contributor, editor, builder, administrator
+      break;
+    /*
+    case 2:
+      //D6: full html
+    case 3:
+      //D6: Webmaster
+    case 4:
+      //D6: Editor
+      $output = 'wysiwyg'; //html for site_builder and administrator
+      break;
+    */
+    default:
+      $output = 'panopoly_wysiwyg_text';
+  }
+
+  return $output;
+}
+/**
+ * Register all D6->D7 migrations.
+ */
+function migrate_hrweb_register_migrations() {
+  /**
+   * Each migration being registered takes an array of arguments, some required
+   * and some optional. Start with the common arguments required by all - the
+   * source_connection (connection key, set up in settings.php, pointing to
+   * the Drupal 6 database), source_version (major version of Drupal), and
+   * group_name (a.k.a. import job).
+   */
+  $common_arguments = array(
+    'source_connection' => 'legacy',
+    'source_version' => 6,
+    'group_name' => 'Users and Roles',
+  );
+
+  // The description and the migration machine name are also required arguments,
+  // which will be unique for each migration you register.
+  $common_arguments['group_name'] = 'Users and Roles';
+
+  /*** Roles ***/
+  $role_arguments = $common_arguments + array(
+      'machine_name' => 'Role',
+      'description' => t('Import Drupal 6 roles'),
+      'role_mappings' => array(
+        'webmaster' => 'builder',
+        'editor' => 'editor',
+        'avc' => 'avc',
+        'reviewer' => 'reviewer',
+        'web assistant' => 'web assistant',
+
+      ),
+    );
+  Migration::registerMigration('DrupalRole6Migration',
+    $role_arguments['machine_name'], $role_arguments);
+
+  /*** Users ***/
+  $arguments = $common_arguments + array(
+      'description' => t('Migration of users from HRWeb Drupal 6'),
+      'machine_name' => 'User',
+      'role_migration' => 'Role',
+    );
+
+  // We just use the migrate_d2d D6 migration class as-is.
+  Migration::registerMigration('DrupalUser6Migration', $arguments['machine_name'],
+    $arguments);
+
+  /*** Vocabulary ***/
+  // For vocabulary migrations, source_vocabulary and destination_vocabulary are
+  // required arguments. Note that in Drupal 6 vocabularies did not have machine
+  // names, so we use the vocabulary ID to uniquely identify them.
+  $common_arguments['group_name'] = 'Taxonomy';
+
+  $vocabulary_arguments = array(
+    array(
+      'description' => t('Vocabulary: Primary Navigation Section'),
+      'machine_name' => 'primary_navigation_section',
+      'source_vocabulary' => '1', // D6 Vocabulary ID
+      'destination_vocabulary' => 'primary_navigation_section',
+    ),
+    array(
+      'description' => t('Vocabulary: Secondary Navigation Section'),
+      'machine_name' => 'secondary_navigation_section',
+      'source_vocabulary' => '2', // D6 Vocabulary ID
+      'destination_vocabulary' => 'secondary_navigation_section',
+    ),
+    array(
+      'description' => t('Vocabulary: FAQ'),
+      'machine_name' => 'FAQ',
+      'source_vocabulary' => '4', // D6 Vocabulary ID
+      'destination_vocabulary' => 'FAQ',
+    ),
+    array(
+      'description' => t('Vocabulary: Glossary'),
+      'machine_name' => 'glossary',
+      'source_vocabulary' => '7', // D6 Vocabulary ID
+      'destination_vocabulary' => 'glossary',
+    ),
+    array(
+      'description' => t('Vocabulary: News Item'),
+      'machine_name' => 'news_item',
+      'source_vocabulary' => '8', // D6 Vocabulary ID
+      'destination_vocabulary' => 'news_item',
+    ),
+    array(
+      'description' => t('Vocabulary: Related Links Categories'),
+      'machine_name' => 'related_links_categories',
+      'source_vocabulary' => '5', // D6 Vocabulary ID
+      'destination_vocabulary' => 'related_links_categories',
+    ),
+
+  );
+
+  // Again, we're using the migrate_d2d class directly.
+  // The soft dependency says that while we don't have to run the user migration
+  // first, we want to make sure it's listed first so the vocabularies are
+  // listed right ahead of the node migrations.
+  $common_vocabulary_arguments = $common_arguments + array(
+      'class_name' => 'DrupalTerm6Migration',
+      'soft_dependencies' => array('User'),
+    );
+  foreach ($vocabulary_arguments as $arguments) {
+    $arguments += $common_vocabulary_arguments;
+    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
+      $arguments);
+  }
+
+  /*** Nodes ***/
+  // Node migrations - each has its own class derived from the migrate_d2d class,
+  // specifying its particular field mappings and transformations. source_type
+  // and destination_type are required arguments.
+  $common_arguments['group_name'] = "Nodes";
+  $node_arguments = array(
+    array(
+      // To make use of your custom class, pass its name rather than DrupalNode6Migration when registering your classes
+      'class_name' => 'HrwebAvccornerMigration',
+      'description' => t('Migration of AVC Corner nodes from Drupal 6'),
+      'machine_name' => 'Avccorner',
+      'source_type' => 'avc_corner',
+      'destination_type' => 'ucb_hrweb_avc_corner',
+    ),
+    array(
+      'class_name' => 'HrwebNodeMigration',
+      'description' => t('Migration of Page nodes from Drupal 6'),
+      'machine_name' => 'Page',
+      'source_type' => 'page',
+      'destination_type' => 'panopoly_page',
+    ),
+    array(
+      'class_name' => 'HrwebNodeMigration',
+      'description' => t('Migration of page_file nodes from Drupal 6'),
+      'machine_name' => 'PageFile',
+      'source_type' => 'page_file',
+      'destination_type' => 'panopoly_page',
+    ),
+  );
+  // Tell the node migrations where the users are coming from, so they can
+  // set up the dependency and resolve D6->D7 uids.
+  $common_node_arguments = $common_arguments + array(
+      'user_migration' => 'User',
+    );
+  foreach ($node_arguments as $arguments) {
+    $arguments = array_merge_recursive($arguments, $common_node_arguments);
+    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
+      $arguments);
+  }
+
+  /*** Files ***/
+  $common_arguments['group_name'] = "Files";
+  $file_arguments = array(
+    array(
+      'class_name' => 'DrupalFile6Migration',
+      'machine_name' => 'AllFiles',
+      'description' => t('Import Drupal 6 files'),
+      'default_uid' => 1,
+      'source_dir' => '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
+      //'destination_dir' => 'public://legacy_files', //defaults to public://
+    ),
+  );
+  $common_file_arguments = $common_arguments + array(
+      'user_migration' => 'User',
+    );
+
+  foreach ($file_arguments as $arguments) {
+    $arguments = array_merge_recursive($arguments, $common_file_arguments);
+    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
+      $arguments);
+  }
+
+  /*****
+  // Menu migrations -- same requirements as users
+  $menu_arguments = $common_arguments + array(
+  'description' => t('Migration of menus from Drupal 6'),
+  'machine_name' => 'Menu',
+  );
+
+  // We just use the migrate_d2d D6 migration class as-is.
+  Migration::registerMigration('DrupalMenu6Migration', $menu_arguments['machine_name'],
+  $menu_arguments);
+
+  // Menu links migrations -- basic requirements, plus must set up menu dependency
+  $menu_links_arguments = $common_arguments + array(
+  'description' => t('Migration of menu links from Drupal 6'),
+  'machine_name' => 'MenuLinks',
+  'menu_migration' => $menu_arguments['machine_name'],
+  );
+  Migration::registerMigration('DrupalMenuLinks6Migration', $menu_links_arguments['machine_name'],
+  $menu_links_arguments);
+   *****/
+}
+
+/**
+ * Implements hook_migrate_api().
+ */
+function migrate_hrweb_migrate_api() {
+  $api = array(
+    'api' => 2,
+  );
+  return $api;
+}
