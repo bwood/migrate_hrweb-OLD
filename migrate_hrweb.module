@@ -13,33 +13,7 @@ function migrate_hrweb_flush_caches() {
   migrate_hrweb_register_migrations();
 }
 
-/**
- * Translate between D6 input format id and D7 text format name.
- */
-function migrate_hrweb_get_text_format($format) {
-  $output = '';
 
-  switch ($format) {
-    case 1:
-      //D6: filtered html
-      $output = 'editor'; //html for contributor, editor, builder, administrator
-      break;
-    /*
-    case 2:
-      //D6: full html
-    case 3:
-      //D6: Webmaster
-    case 4:
-      //D6: Editor
-      $output = 'wysiwyg'; //html for site_builder and administrator
-      break;
-    */
-    default:
-      $output = 'panopoly_wysiwyg_text';
-  }
-
-  return $output;
-}
 /**
  * Register all D6->D7 migrations.
  */
