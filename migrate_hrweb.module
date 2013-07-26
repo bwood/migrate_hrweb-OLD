@@ -83,9 +83,9 @@ function migrate_hrweb_register_migrations() {
     ),
     array(
       'description' => t('Vocabulary: FAQ'),
-      'machine_name' => 'FAQ',
+      'machine_name' => 'faqs',
       'source_vocabulary' => '4', // D6 Vocabulary ID
-      'destination_vocabulary' => 'FAQ',
+      'destination_vocabulary' => 'faqs',
     ),
     array(
       'description' => t('Vocabulary: Glossary'),
