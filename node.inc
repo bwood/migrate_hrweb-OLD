@@ -83,3 +83,74 @@ class HrwebAvccornerMigration extends HrwebNodeMigration {
 
   }
 }
+
+class HrwebBookPageMigration extends HrwebNodeMigration {
+  public function __construct(array $arguments) {
+    parent::__construct($arguments);
+  }
+
+  /**
+   * Overrides parent::query to add more data to the source, in our case,
+   * book hierarchy stuff.
+   */
+  public function query() {
+    $query = parent::query();
+    // Add in book parent child relationships.
+    $query->join('book', 'b', 'n.nid = b.nid');
+    $query->addField('b', 'bid', 'book_id');
+    $query->join('menu_links', 'ml', 'b.mlid = ml.mlid');
+    $query->addField('ml', 'weight', 'book_weight');
+//    $query->addField('ml', 'plid', 'parent_link');
+    return $query;
+  }
+
+  /**
+   * Acts right after a book node has been saved. Map the book hierarchy.
+   *
+   * @param object $node
+   *   A node object for the newly migrated book.
+   * @param stdClass $row
+   *   An object representing data from the source row.
+   */
+  public function complete($node, stdClass $row) {
+
+    //Sets "Book" at node/xxxx/outline
+    // bid: If this is a top-level book, don't set a parent.
+    $book_id = $row->nid == $row->book_id ? $node->nid : $this->lookupMigratedBook($row->book_id);
+    // Book id - effectively, parent nid.
+    $node->book['bid'] = $book_id;
+
+    //Sets "Parent Item" at node/xxxx/outline
+    //plid: if this row had a plid set, update the plid to refer to the migrated parent node
+  //  $node->book['plid'] = $this->lookupMigratedParentPage($row->parent_link);
+
+    $node->book['nid'] = $node->nid;
+    $node->book['weight'] = $row->book_weight;
+    _book_update_outline($node);
+    node_save($node);
+  }
+
+  /**
+   * Returns the book id for the book that this Page is part of
+   *
+   * @param int $source_book_nid
+   *   Nid of book in source database to lookup.
+   */
+  protected function lookupMigratedParentPage($source_plid) {
+    $dest_plid = parent::handleSourceMigration('BookPage', $source_plid);
+    return $dest_plid;
+  }
+
+
+/**
+   * Returns the book id for the book that this Page is part of
+   *
+   * @param int $source_book_nid
+   *   Nid of book in source database to lookup.
+   */
+  protected function lookupMigratedBook($source_book_nid) {
+    $dest_book_nid = parent::handleSourceMigration('BookPage', $source_book_nid);
+    return $dest_book_nid;
+  }
+
+}
