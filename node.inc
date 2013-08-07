@@ -100,7 +100,13 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
     $query->addField('b', 'bid', 'book_id');
     $query->join('menu_links', 'ml', 'b.mlid = ml.mlid');
     $query->addField('ml', 'weight', 'book_weight');
-//    $query->addField('ml', 'plid', 'parent_link');
+    //Query extention to get nid of parent from the link path in menu_links (could get it elsewhere)
+    $query->leftJoin('menu_links', 'mm', 'ml.plid = mm.mlid');
+    $query->addField('mm', 'link_path', 'parent_id');
+    // Sort by depth so there is always a parent
+    $query->orderBy('ml.depth');
+
+    $x = Database::getConnection()->prefixTables($query);
     return $query;
   }
 
@@ -113,21 +119,39 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
    *   An object representing data from the source row.
    */
   public function complete($node, stdClass $row) {
+    // If this is a top-level book, don't set a parent.
+    $book_id = $row->nid == $row->book_id ? $node->nid : parent::handleSourceMigration('BookPage', $row->book_id);
 
-    //Sets "Book" at node/xxxx/outline
     // bid: If this is a top-level book, don't set a parent.
-    $book_id = $row->nid == $row->book_id ? $node->nid : $this->lookupMigratedBook($row->book_id);
+    //$book_id = $row->nid == $row->book_id ? $node->nid : $this->lookupMigratedBook($row->book_id);
     // Book id - effectively, parent nid.
     $node->book['bid'] = $book_id;
-
-    //Sets "Parent Item" at node/xxxx/outline
-    //plid: if this row had a plid set, update the plid to refer to the migrated parent node
-  //  $node->book['plid'] = $this->lookupMigratedParentPage($row->parent_link);
-
     $node->book['nid'] = $node->nid;
     $node->book['weight'] = $row->book_weight;
+
+    // We strip the "node/"-part from the link_path
+    $parent_id = str_replace("node/", "", $row->parent_id);
+    // If there is a parent we lookup the migrated node
+    if(isset($parent_id) && $parent_id > 0) {
+      $parent_node = parent::handleSourceMigration('BookPage', $parent_id);
+      // We get the mlid of the migrated parent
+      $query = db_select("menu_links", "ml")
+        ->fields("ml")
+        ->condition("ml.link_path", "node/" . $parent_node, "=")
+        ->execute()
+        ->fetchAssoc();
+      $plid = $query['mlid'];
+      // We add the parent mlid (plid)
+      $node->book['plid'] = $plid;
+      /**
+       * left off
+       * $plid is null when row->nid=78 bc mlid hasn't been created for 77
+       */
+    }
+
     _book_update_outline($node);
     node_save($node);
+
   }
 
   /**
