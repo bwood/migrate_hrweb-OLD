@@ -84,6 +84,17 @@ class HrwebAvccornerMigration extends HrwebNodeMigration {
   }
 }
 
+class HrwebGlossaryMigration extends HrwebNodeMigration {
+  public function __construct(array $arguments) {
+
+    parent::__construct($arguments);
+
+    //Map non-standard body field
+    $this->addFieldMapping('body', 'field_body');
+
+  }
+}
+
 class HrwebBookPageMigration extends HrwebNodeMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
