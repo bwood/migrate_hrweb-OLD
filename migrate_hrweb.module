@@ -200,6 +200,13 @@ function migrate_hrweb_register_migrations() {
       'source_type' => 'ddblock_news_item',
       'destination_type' => 'slide_item',
     ),
+    array(
+      'class_name' => 'HrwebRelatedLinkMigration',
+      'description' => t('Migration of Related Links nodes from Drupal 6'),
+      'machine_name' => 'RelatedLink',
+      'source_type' => 'related_link',
+      'destination_type' => 'related_link',
+    ),
   );
   // Tell the node migrations where the users are coming from, so they can
   // set up the dependency and resolve D6->D7 uids.

@@ -95,6 +95,24 @@ class HrwebGlossaryMigration extends HrwebNodeMigration {
   }
 }
 
+class HrwebRelatedLinkMigration extends HrwebNodeMigration {
+  public function __construct(array $arguments) {
+
+    parent::__construct($arguments);
+
+    //Map non-standard body field
+    $this->addFieldMapping('body', 'field_body');
+
+    //Related links categoies vocab id = 5 in source
+    $this->addFieldMapping('field_link_category', 5)
+      ->sourceMigration('related_links_categories')
+      ->arguments(array('source_type' => 'tid'));
+
+
+  }
+}
+
+
 class HrwebSlideMigration extends HrwebNodeMigration {
   public function __construct(array $arguments) {
 
