@@ -122,6 +122,28 @@ function migrate_hrweb_register_migrations() {
       $arguments);
   }
 
+  /*** Files ***/
+  $common_arguments['group_name'] = "Files";
+  $file_arguments = array(
+    array(
+      'class_name' => 'DrupalFile6Migration',
+      'machine_name' => 'AllFiles',
+      'description' => t('Import Drupal 6 files'),
+      'default_uid' => 1,
+      'source_dir' => '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
+      //'destination_dir' => 'public://legacy_files', //defaults to public://
+    ),
+  );
+  $common_file_arguments = $common_arguments + array(
+      'user_migration' => 'User',
+    );
+
+  foreach ($file_arguments as $arguments) {
+    $arguments = array_merge_recursive($arguments, $common_file_arguments);
+    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
+      $arguments);
+  }
+
   /*** Nodes ***/
   // Node migrations - each has its own class derived from the migrate_d2d class,
   // specifying its particular field mappings and transformations. source_type
@@ -171,6 +193,13 @@ function migrate_hrweb_register_migrations() {
       'source_type' => 'glossary_item',
       'destination_type' => 'glossary_item',
     ),
+    array(
+      'class_name' => 'HrwebSlideMigration',
+      'description' => t('Migration of Slide Item nodes from Drupal 6'),
+      'machine_name' => 'SlideItem',
+      'source_type' => 'ddblock_news_item',
+      'destination_type' => 'slide_item',
+    ),
   );
   // Tell the node migrations where the users are coming from, so they can
   // set up the dependency and resolve D6->D7 uids.
@@ -179,28 +208,6 @@ function migrate_hrweb_register_migrations() {
     );
   foreach ($node_arguments as $arguments) {
     $arguments = array_merge_recursive($arguments, $common_node_arguments);
-    Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
-      $arguments);
-  }
-
-  /*** Files ***/
-  $common_arguments['group_name'] = "Files";
-  $file_arguments = array(
-    array(
-      'class_name' => 'DrupalFile6Migration',
-      'machine_name' => 'AllFiles',
-      'description' => t('Import Drupal 6 files'),
-      'default_uid' => 1,
-      'source_dir' => '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
-      //'destination_dir' => 'public://legacy_files', //defaults to public://
-    ),
-  );
-  $common_file_arguments = $common_arguments + array(
-      'user_migration' => 'User',
-    );
-
-  foreach ($file_arguments as $arguments) {
-    $arguments = array_merge_recursive($arguments, $common_file_arguments);
     Migration::registerMigration($arguments['class_name'], $arguments['machine_name'],
       $arguments);
   }

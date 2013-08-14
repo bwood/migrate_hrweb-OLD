@@ -95,6 +95,24 @@ class HrwebGlossaryMigration extends HrwebNodeMigration {
   }
 }
 
+class HrwebSlideMigration extends HrwebNodeMigration {
+  public function __construct(array $arguments) {
+
+    parent::__construct($arguments);
+
+    //Map non-standard body field
+    $this->addFieldMapping('field_slide_pager_item_text', 'field_pager_item_text');
+    $this->addFieldMapping('field_slide_url', 'field_url');
+
+    $this->addFieldMapping('field_slide_image', 'field_image')
+      ->sourceMigration('AllFiles');
+    $this->addFieldMapping('field_slide_image:file_class')
+      ->defaultValue('MigrateFileFid');
+    $this->addFieldMapping('field_slide_image:preserve_files')
+      ->defaultValue(TRUE);
+  }
+}
+
 class HrwebBookPageMigration extends HrwebNodeMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
