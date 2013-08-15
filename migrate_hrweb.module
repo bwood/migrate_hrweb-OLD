@@ -202,10 +202,17 @@ function migrate_hrweb_register_migrations() {
     ),
     array(
       'class_name' => 'HrwebRelatedLinkMigration',
-      'description' => t('Migration of Related Links nodes from Drupal 6'),
+      'description' => t('Migration of Related Link nodes from Drupal 6'),
       'machine_name' => 'RelatedLink',
       'source_type' => 'related_link',
       'destination_type' => 'related_link',
+    ),
+    array(
+      'class_name' => 'HrwebRelatedLinkAttachmentMigration',
+      'description' => t('Migration of Related Link Attachment nodes from Drupal 6'),
+      'machine_name' => 'RelatedLinkAttachment',
+      'source_type' => 'related_link_file',
+      'destination_type' => 'related_link_attachment',
     ),
   );
   // Tell the node migrations where the users are coming from, so they can

@@ -112,6 +112,25 @@ class HrwebRelatedLinkMigration extends HrwebNodeMigration {
   }
 }
 
+class HrwebRelatedLinkAttachmentMigration extends HrwebRelatedLinkMigration {
+
+  public function __construct(array $arguments) {
+    parent::__construct($arguments);
+  }
+
+  /*
+   * When you transform the contents of a field, you seem to need to use prepare() as opposed to prepareRow()
+   */
+  public function prepare($node, stdClass $row) {
+
+   if ((strpos($node->body[LANGUAGE_NONE][0]['summary'], 'hrweb.berkeley.edu/files')) ||
+      (strpos($node->body[LANGUAGE_NONE][0]['summary'], 'href="/files'))) {
+      $node->body[LANGUAGE_NONE][0]['summary'] = str_replace('/files', '/sites/default/files', $node->body[LANGUAGE_NONE][0]['summary']);
+    }
+
+    return TRUE;
+  }
+}
 
 class HrwebSlideMigration extends HrwebNodeMigration {
   public function __construct(array $arguments) {
