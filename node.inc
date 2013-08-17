@@ -150,6 +150,58 @@ class HrwebSlideMigration extends HrwebNodeMigration {
   }
 }
 
+class HrwebFaqMigration extends HrwebNodeMigration {
+  public function __construct(array $arguments) {
+    parent::__construct($arguments);
+
+    //Related links categoies vocab id = 5 in source
+    $this->addFieldMapping('field_faq_category', 4)
+      ->sourceMigration('faqs')
+      ->arguments(array('source_type' => 'tid'));
+
+  }
+
+  public function query() {
+    $query = parent::query();
+    $query->join('faq_questions', 'fq', 'fq.nid=n.nid');
+    $query->leftJoin('faq_weights', 'w', 'w.nid=n.nid');
+    $query->addField('fq', 'question');
+    $query->addField('fq', 'detailed_question');
+    $query->addField('w', 'weight');
+    $query->addField('w', 'tid');
+    //$x = Database::getConnection()->prefixTables($query);
+    return $query;
+  }
+
+  /**
+   * Acts right after a node has been saved.
+   *
+   * @param object $node
+   *   A node object for the newly migrated node.
+   * @param stdClass $row
+   *   An object representing data from the source row.
+   */
+  public function complete($node, stdClass $row) {
+    require_once(drupal_get_path('module', 'faq') . '/faq.module');
+    // update or insert into faq_weights
+    // lifted from faq.admin.inc: faq_order_settings_reorder_form_submit()
+    db_merge('faq_weights')
+      ->fields(array(
+        'weight' => $row->weight,
+      ))
+      ->key(array(
+        'tid' => $row->tid,
+        'nid' => $node->nid,
+      ))
+      ->execute();
+    //insert into faq_question
+    faq_insert($node);
+
+  }
+
+
+}
+
 class HrwebBookPageMigration extends HrwebNodeMigration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
@@ -172,7 +224,7 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
     // Sort by depth so there is always a parent
     $query->orderBy('ml.depth');
 
-    $x = Database::getConnection()->prefixTables($query);
+    //$x = Database::getConnection()->prefixTables($query);
     return $query;
   }
 

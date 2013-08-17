@@ -130,6 +130,7 @@ function migrate_hrweb_register_migrations() {
       'machine_name' => 'AllFiles',
       'description' => t('Import Drupal 6 files'),
       'default_uid' => 1,
+      //TODO: use api function to find this dir
       'source_dir' => '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
       //'destination_dir' => 'public://legacy_files', //defaults to public://
     ),
@@ -213,6 +214,13 @@ function migrate_hrweb_register_migrations() {
       'machine_name' => 'RelatedLinkAttachment',
       'source_type' => 'related_link_file',
       'destination_type' => 'related_link_attachment',
+    ),
+    array(
+      'class_name' => 'HrwebFaqMigration',
+      'description' => t('Migration of FAQ nodes from Drupal 6'),
+      'machine_name' => 'Faq',
+      'source_type' => 'faq',
+      'destination_type' => 'faq',
     ),
   );
   // Tell the node migrations where the users are coming from, so they can
