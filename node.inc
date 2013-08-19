@@ -173,6 +173,21 @@ class HrwebFaqMigration extends HrwebNodeMigration {
     return $query;
   }
 
+  public function prepareRow($current_row) {
+    // Always start your prepareRow implementation with this clause. You need to
+    // be sure your parent classes have their chance at the row, and that if
+    // they return FALSE (indicating the row should be skipped) you pass that
+    // on.
+    if (parent::prepareRow($current_row) === FALSE) {
+      return FALSE;
+    }
+
+    // get rid of the path that uses the source's nid. correct path will
+    // be created on save
+    unset($current_row->path);
+    return TRUE;
+  }
+
   /**
    * Acts right after a node has been saved.
    *
@@ -183,6 +198,7 @@ class HrwebFaqMigration extends HrwebNodeMigration {
    */
   public function complete($node, stdClass $row) {
     require_once(drupal_get_path('module', 'faq') . '/faq.module');
+
     // update or insert into faq_weights
     // lifted from faq.admin.inc: faq_order_settings_reorder_form_submit()
     db_merge('faq_weights')
@@ -194,6 +210,7 @@ class HrwebFaqMigration extends HrwebNodeMigration {
         'nid' => $node->nid,
       ))
       ->execute();
+
     //insert into faq_question
     faq_insert($node);
 
