@@ -203,7 +203,7 @@ class HrwebFaqMigration extends HrwebNodeMigration {
     // lifted from faq.admin.inc: faq_order_settings_reorder_form_submit()
     db_merge('faq_weights')
       ->fields(array(
-        'weight' => $row->weight,
+        'weight' => (int) $row->weight,
       ))
       ->key(array(
         'tid' => $row->tid,
