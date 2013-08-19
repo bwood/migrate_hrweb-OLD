@@ -130,8 +130,7 @@ function migrate_hrweb_register_migrations() {
       'machine_name' => 'AllFiles',
       'description' => t('Import Drupal 6 files'),
       'default_uid' => 1,
-      //TODO: use api function to find this dir
-      'source_dir' => '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
+      'source_dir' =>  variable_get('file_public_path', conf_path() . '/files'),
       //'destination_dir' => 'public://legacy_files', //defaults to public://
     ),
   );
