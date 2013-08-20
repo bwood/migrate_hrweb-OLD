@@ -163,7 +163,16 @@ class HrwebFaqMigration extends HrwebNodeMigration {
 
   public function query() {
     $query = parent::query();
-    $query->join('faq_questions', 'fq', 'fq.nid=n.nid');
+
+    $subquery = Database::getConnection('default', $this->sourceConnection)
+      ->select('node_revisions', 'nr')
+      ->fields('nr', array('nid'));
+    $subquery->addExpression('MAX(nr.vid)', 'vid');
+    $subquery->groupBy('nr.nid');
+
+
+    $query->addJoin('INNER', $subquery, 'subnr', 'n.nid=subnr.nid AND n.vid=subnr.vid');
+    $query->join('faq_questions', 'fq', 'fq.nid=n.nid AND fq.vid=n.vid');
     $query->leftJoin('faq_weights', 'w', 'w.nid=n.nid');
     $query->addField('fq', 'question');
     $query->addField('fq', 'detailed_question');
@@ -201,17 +210,18 @@ class HrwebFaqMigration extends HrwebNodeMigration {
 
     // update or insert into faq_weights
     // lifted from faq.admin.inc: faq_order_settings_reorder_form_submit()
-    db_merge('faq_weights')
+     db_merge('faq_weights')
       ->fields(array(
         'weight' => (int) $row->weight,
       ))
       ->key(array(
-        'tid' => $row->tid,
+        'tid' => $node->field_faq_category[LANGUAGE_NONE][0]['tid'],
         'nid' => $node->nid,
       ))
       ->execute();
 
     //insert into faq_question
+    $node->detailed_question = $row->detailed_question;
     faq_insert($node);
 
   }
