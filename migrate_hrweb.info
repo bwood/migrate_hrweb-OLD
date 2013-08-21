@@ -8,7 +8,6 @@ version = "7.x-0.1"
 dependencies[] = migrate
 dependencies[] = migrate_d2d
 dependencies[] = book
-dependencies[] = faq
 
 files[] = node.inc
 files[] = menu.inc

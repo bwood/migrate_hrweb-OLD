@@ -7,7 +7,10 @@ class HrwebNodeMigration extends DrupalNode6Migration {
   public function __construct(array $arguments) {
     parent::__construct($arguments);
     //Map D6 input formats to OB text formats
-    $this->addFieldMapping('body:format', 'format')->callbacks(array($this, 'migrate_hrweb_get_text_format_by_id'));
+    $this->addFieldMapping('body:format', 'format')->callbacks(array(
+      $this,
+      'migrate_hrweb_get_text_format_by_id'
+    ));
 
   }
 
@@ -40,36 +43,36 @@ class HrwebNodeMigration extends DrupalNode6Migration {
     return $output;
   }
 
- /*
-    public function prepareRow($current_row) {
-      // Always start your prepareRow implementation with this clause. You need to
-      // be sure your parent classes have their chance at the row, and that if
-      // they return FALSE (indicating the row should be skipped) you pass that
-      // on.
-      if (parent::prepareRow($current_row) === FALSE) {
-        return FALSE;
-      }
+  /*
+     public function prepareRow($current_row) {
+       // Always start your prepareRow implementation with this clause. You need to
+       // be sure your parent classes have their chance at the row, and that if
+       // they return FALSE (indicating the row should be skipped) you pass that
+       // on.
+       if (parent::prepareRow($current_row) === FALSE) {
+         return FALSE;
+       }
 
-      //Best to change body:format in __construc() using addFieldMapping
-      //resorted to using the prepare() method instead.
-      $current_row->format = $this->migrate_hrweb_get_text_format_by_id($current_row->format);
-      //$current_row->format = 'panopoly_wysiwyg_text';
+       //Best to change body:format in __construc() using addFieldMapping
+       //resorted to using the prepare() method instead.
+       $current_row->format = $this->migrate_hrweb_get_text_format_by_id($current_row->format);
+       //$current_row->format = 'panopoly_wysiwyg_text';
 
-      return TRUE;
-    }
+       return TRUE;
+     }
 
 
-    public function prepare($node, stdClass $row) {
-      // TIP: Note that the Migration prepare method is called after all other
-      // prepare handlers. Most notably, the field handlers have had their way
-      // and created field arrays, so we have to save in the same format.
+     public function prepare($node, stdClass $row) {
+       // TIP: Note that the Migration prepare method is called after all other
+       // prepare handlers. Most notably, the field handlers have had their way
+       // and created field arrays, so we have to save in the same format.
 
-      //If format is not editor, set to wysiwyg
-      //Could've done this in prepareRow, but easier to let mapFormat do it's thing first
+       //If format is not editor, set to wysiwyg
+       //Could've done this in prepareRow, but easier to let mapFormat do it's thing first
 
-      $node->body[LANGUAGE_NONE][0]['format'] = $this->migrate_hrweb_get_text_format_by_name($node->body[LANGUAGE_NONE][0]['format']);
-    }
-*/
+       $node->body[LANGUAGE_NONE][0]['format'] = $this->migrate_hrweb_get_text_format_by_name($node->body[LANGUAGE_NONE][0]['format']);
+     }
+ */
 
 }
 
@@ -123,8 +126,9 @@ class HrwebRelatedLinkAttachmentMigration extends HrwebRelatedLinkMigration {
    */
   public function prepare($node, stdClass $row) {
 
-   if ((strpos($node->body[LANGUAGE_NONE][0]['summary'], 'hrweb.berkeley.edu/files')) ||
-      (strpos($node->body[LANGUAGE_NONE][0]['summary'], 'href="/files'))) {
+    if ((strpos($node->body[LANGUAGE_NONE][0]['summary'], 'hrweb.berkeley.edu/files')) ||
+      (strpos($node->body[LANGUAGE_NONE][0]['summary'], 'href="/files'))
+    ) {
       $node->body[LANGUAGE_NONE][0]['summary'] = str_replace('/files', '/sites/default/files', $node->body[LANGUAGE_NONE][0]['summary']);
     }
 
@@ -198,6 +202,46 @@ class HrwebFaqMigration extends HrwebNodeMigration {
   }
 
   /**
+   * Code to run before first row is imported
+   */
+  public function preImport() {
+    parent::preImport();
+    /*
+     * If the faq module is enabled, faq_insert() and/or faq_update() may try to
+     * run resulting in migrate log messages like:
+     *       2461        Undefined property: stdClass::$detailed_question
+             2461        SQLSTATE[23000]: Integrity constraint violation:
+                         1062 Duplicate entry '8525-9641' for
+                         key 'PRIMARY'
+     */
+    if (module_exists('faq')) {
+      module_disable(array('faq'));
+      drupal_set_message("Now, now Drupal, those module disable/enable lines were not errors. --Brian");
+    }
+  }
+
+  /**
+   * Code to run after last row is imported
+   */
+  public function postImport() {
+    parent::postImport();
+      /*
+       * Since we just imported faq content, you probably want this module
+       * enabled so you can test things out.
+       */
+    module_enable(array('faq'));
+  }
+
+  /**
+   * Code to execute after the last article row has been deleted
+   */
+  public function postRollback() {
+    parent::postRollback();
+    db_truncate('faq_questions')->execute();
+    drupal_set_message("Truncated faq_questions table!");
+    drupal_set_message("Partial rollbacks of Faq are NOT supported.  Don't attempt migrate-rollback with arguments like --idlist.", "warning");
+  }
+  /**
    * Acts right after a node has been saved.
    *
    * @param object $node
@@ -206,11 +250,10 @@ class HrwebFaqMigration extends HrwebNodeMigration {
    *   An object representing data from the source row.
    */
   public function complete($node, stdClass $row) {
-    require_once(drupal_get_path('module', 'faq') . '/faq.module');
 
     // update or insert into faq_weights
     // lifted from faq.admin.inc: faq_order_settings_reorder_form_submit()
-     db_merge('faq_weights')
+    db_merge('faq_weights')
       ->fields(array(
         'weight' => (int) $row->weight,
       ))
@@ -221,8 +264,17 @@ class HrwebFaqMigration extends HrwebNodeMigration {
       ->execute();
 
     //insert into faq_question
-    $node->detailed_question = $row->detailed_question;
-    faq_insert($node);
+    db_merge('faq_questions')
+      ->fields(array(
+        'question' => $node->title,
+        'detailed_question' => $row->detailed_question,
+      ))
+      ->key(array(
+        'nid' => $node->nid,
+        'vid' => $node->vid,
+      ))
+      ->execute();
+
 
   }
 
@@ -277,7 +329,7 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
     // We strip the "node/"-part from the link_path
     $parent_id = str_replace("node/", "", $row->parent_id);
     // If there is a parent we lookup the migrated node
-    if(isset($parent_id) && $parent_id > 0) {
+    if (isset($parent_id) && $parent_id > 0) {
       $parent_node = parent::handleSourceMigration('BookPage', $parent_id);
       // We get the mlid of the migrated parent
       $query = db_select("menu_links", "ml")
@@ -311,7 +363,7 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
   }
 
 
-/**
+  /**
    * Returns the book id for the book that this Page is part of
    *
    * @param int $source_book_nid
