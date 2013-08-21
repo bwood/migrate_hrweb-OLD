@@ -1,5 +1,6 @@
 $data = array(
   'bundles' => array(
+    'avc_corner' => FALSE,
     'book' => (object) array(
       'type' => 'book',
       'name' => 'Book page',
@@ -82,6 +83,23 @@ $data = array(
       'locked' => '1',
       'disabled' => FALSE,
       'orig_type' => 'panopoly_page',
+      'disabled_changed' => FALSE,
+      'bc_entity_type' => 'node',
+    ),
+    'photo' => (object) array(
+      'type' => 'photo',
+      'name' => 'Photo',
+      'base' => 'node_content',
+      'module' => 'node',
+      'description' => 'Single photo for gallery',
+      'help' => '',
+      'has_title' => '1',
+      'title_label' => 'Title',
+      'custom' => '1',
+      'modified' => '1',
+      'locked' => '0',
+      'disabled' => '0',
+      'orig_type' => 'photo',
       'disabled_changed' => FALSE,
       'bc_entity_type' => 'node',
     ),
@@ -216,6 +234,7 @@ $data = array(
           6 => 'slide_item',
           7 => 'related_link',
           8 => 'related_link_attachment',
+          9 => 'ucb_hrweb_avc_corner',
         ),
       ),
     ),
@@ -356,6 +375,161 @@ $data = array(
       'bundles' => array(
         'node' => array(
           0 => 'faq',
+        ),
+      ),
+    ),
+    'field_featured_image' => array(
+      'entity_types' => array(),
+      'foreign keys' => array(
+        'fid' => array(
+          'table' => 'file_managed',
+          'columns' => array(
+            'fid' => 'fid',
+          ),
+        ),
+      ),
+      'indexes' => array(
+        'fid' => array(
+          0 => 'fid',
+        ),
+      ),
+      'settings' => array(
+        'uri_scheme' => 'public',
+        'default_image' => 0,
+      ),
+      'translatable' => '0',
+      'storage' => array(
+        'type' => 'field_sql_storage',
+        'settings' => array(),
+        'module' => 'field_sql_storage',
+        'active' => '1',
+        'details' => array(
+          'sql' => array(
+            'FIELD_LOAD_CURRENT' => array(
+              'field_data_field_featured_image' => array(
+                'fid' => 'field_featured_image_fid',
+                'alt' => 'field_featured_image_alt',
+                'title' => 'field_featured_image_title',
+                'width' => 'field_featured_image_width',
+                'height' => 'field_featured_image_height',
+              ),
+            ),
+            'FIELD_LOAD_REVISION' => array(
+              'field_revision_field_featured_image' => array(
+                'fid' => 'field_featured_image_fid',
+                'alt' => 'field_featured_image_alt',
+                'title' => 'field_featured_image_title',
+                'width' => 'field_featured_image_width',
+                'height' => 'field_featured_image_height',
+              ),
+            ),
+          ),
+        ),
+      ),
+      'field_name' => 'field_featured_image',
+      'type' => 'image',
+      'module' => 'image',
+      'active' => '1',
+      'locked' => '0',
+      'cardinality' => '1',
+      'deleted' => '0',
+      'columns' => array(
+        'fid' => array(
+          'description' => 'The {file_managed}.fid being referenced in this field.',
+          'type' => 'int',
+          'not null' => FALSE,
+          'unsigned' => TRUE,
+        ),
+        'alt' => array(
+          'description' => 'Alternative image text, for the image\'s \'alt\' attribute.',
+          'type' => 'varchar',
+          'length' => 512,
+          'not null' => FALSE,
+        ),
+        'title' => array(
+          'description' => 'Image title text, for the image\'s \'title\' attribute.',
+          'type' => 'varchar',
+          'length' => 1024,
+          'not null' => FALSE,
+        ),
+        'width' => array(
+          'description' => 'The width of the image in pixels.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ),
+        'height' => array(
+          'description' => 'The height of the image in pixels.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ),
+      ),
+      'bundles' => array(
+        'node' => array(
+          0 => 'photo',
+        ),
+      ),
+    ),
+    'field_gallery' => array(
+      'translatable' => '0',
+      'entity_types' => array(),
+      'settings' => array(
+        'allowed_values' => array(
+          0 => array(
+            'vocabulary' => 'galleries',
+            'parent' => '0',
+          ),
+        ),
+      ),
+      'storage' => array(
+        'type' => 'field_sql_storage',
+        'settings' => array(),
+        'module' => 'field_sql_storage',
+        'active' => '1',
+        'details' => array(
+          'sql' => array(
+            'FIELD_LOAD_CURRENT' => array(
+              'field_data_field_gallery' => array(
+                'tid' => 'field_gallery_tid',
+              ),
+            ),
+            'FIELD_LOAD_REVISION' => array(
+              'field_revision_field_gallery' => array(
+                'tid' => 'field_gallery_tid',
+              ),
+            ),
+          ),
+        ),
+      ),
+      'foreign keys' => array(
+        'tid' => array(
+          'table' => 'taxonomy_term_data',
+          'columns' => array(
+            'tid' => 'tid',
+          ),
+        ),
+      ),
+      'indexes' => array(
+        'tid' => array(
+          0 => 'tid',
+        ),
+      ),
+      'field_name' => 'field_gallery',
+      'type' => 'taxonomy_term_reference',
+      'module' => 'taxonomy',
+      'active' => '1',
+      'locked' => '0',
+      'cardinality' => '3',
+      'deleted' => '0',
+      'columns' => array(
+        'tid' => array(
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => FALSE,
+        ),
+      ),
+      'bundles' => array(
+        'node' => array(
+          0 => 'photo',
         ),
       ),
     ),
@@ -1255,6 +1429,54 @@ $data = array(
             'rows' => 20,
             'summary_rows' => 5,
           ),
+          'weight' => '2',
+          'module' => 'text',
+        ),
+        'settings' => array(
+          'display_summary' => TRUE,
+          'text_processing' => 1,
+          'user_register_form' => FALSE,
+        ),
+        'display' => array(
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'text_default',
+            'weight' => '0',
+            'settings' => array(),
+            'module' => 'text',
+          ),
+          'teaser' => array(
+            'label' => 'hidden',
+            'type' => 'text_summary_or_trimmed',
+            'settings' => array(
+              'trim_length' => 600,
+            ),
+            'module' => 'text',
+            'weight' => 0,
+          ),
+          'featured' => array(
+            'type' => 'hidden',
+            'label' => 'above',
+            'settings' => array(),
+            'weight' => 0,
+          ),
+        ),
+        'required' => FALSE,
+        'description' => '',
+        'field_name' => 'body',
+        'entity_type' => 'node',
+        'bundle' => 'photo',
+        'deleted' => '0',
+        'default_value' => NULL,
+      ),
+      6 => array(
+        'label' => 'Body',
+        'widget' => array(
+          'type' => 'text_textarea_with_summary',
+          'settings' => array(
+            'rows' => 20,
+            'summary_rows' => 5,
+          ),
           'weight' => '31',
           'module' => 'text',
         ),
@@ -1295,7 +1517,7 @@ $data = array(
         'deleted' => '0',
         'default_value' => NULL,
       ),
-      6 => array(
+      7 => array(
         'label' => 'Body',
         'widget' => array(
           'type' => 'text_textarea_with_summary',
@@ -1345,7 +1567,7 @@ $data = array(
         'deleted' => '0',
         'default_value' => NULL,
       ),
-      7 => array(
+      8 => array(
         'label' => 'Body',
         'widget' => array(
           'type' => 'text_textarea_with_summary',
@@ -1502,6 +1724,112 @@ $data = array(
         'field_name' => 'field_faq_category',
         'entity_type' => 'node',
         'bundle' => 'faq',
+        'deleted' => '0',
+      ),
+    ),
+    'field_featured_image' => array(
+      0 => array(
+        'label' => 'Image',
+        'widget' => array(
+          'weight' => '1',
+          'type' => 'image_image',
+          'module' => 'image',
+          'active' => 1,
+          'settings' => array(
+            'progress_indicator' => 'throbber',
+            'preview_image_style' => 'thumbnail',
+            'allowed_types' => array(
+              0 => 'image',
+            ),
+            'browser_plugins' => array(),
+            'allowed_schemes' => array(
+              0 => 'public',
+              1 => 'private',
+            ),
+          ),
+        ),
+        'settings' => array(
+          'file_directory' => 'gallery',
+          'file_extensions' => 'png gif jpg jpeg',
+          'max_filesize' => '2 MB',
+          'max_resolution' => '640x480',
+          'min_resolution' => '160x120',
+          'alt_field' => 1,
+          'title_field' => 1,
+          'default_image' => 0,
+          'user_register_form' => FALSE,
+        ),
+        'display' => array(
+          'default' => array(
+            'label' => 'hidden',
+            'type' => 'image',
+            'weight' => '1',
+            'settings' => array(
+              'image_style' => '',
+              'image_link' => '',
+            ),
+            'module' => 'image',
+          ),
+          'teaser' => array(
+            'type' => 'hidden',
+            'label' => 'above',
+            'settings' => array(),
+            'weight' => 0,
+          ),
+          'featured' => array(
+            'type' => 'hidden',
+            'label' => 'above',
+            'settings' => array(),
+            'weight' => 0,
+          ),
+        ),
+        'required' => 1,
+        'description' => '',
+        'field_name' => 'field_featured_image',
+        'entity_type' => 'node',
+        'bundle' => 'photo',
+        'deleted' => '0',
+      ),
+    ),
+    'field_gallery' => array(
+      0 => array(
+        'label' => 'Gallery',
+        'widget' => array(
+          'weight' => '3',
+          'type' => 'options_buttons',
+          'module' => 'options',
+          'active' => 1,
+          'settings' => array(),
+        ),
+        'settings' => array(
+          'user_register_form' => FALSE,
+        ),
+        'display' => array(
+          'default' => array(
+            'label' => 'above',
+            'type' => 'hidden',
+            'weight' => '2',
+            'settings' => array(),
+          ),
+          'teaser' => array(
+            'type' => 'hidden',
+            'label' => 'above',
+            'settings' => array(),
+            'weight' => 0,
+          ),
+          'featured' => array(
+            'type' => 'hidden',
+            'label' => 'above',
+            'settings' => array(),
+            'weight' => 0,
+          ),
+        ),
+        'required' => 1,
+        'description' => 'Which gallery should this photo be assigned to?',
+        'default_value' => NULL,
+        'field_name' => 'field_gallery',
+        'entity_type' => 'node',
+        'bundle' => 'photo',
         'deleted' => '0',
       ),
     ),
