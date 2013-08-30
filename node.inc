@@ -38,9 +38,7 @@ class HrwebNodeMigration extends DrupalNode6Migration {
 
       default:
         $output = 'editor';
-      //'panopoly_wysiwyg_text';
     }
-
     return $output;
   }
 
@@ -55,8 +53,19 @@ class HrwebNodeMigration extends DrupalNode6Migration {
      *    a href="internal:node/222"
      * where 111 represents a nid in the source db and 222 represents the corresponding nid in the destination db.
      */
-    $node->body[LANGUAGE_NONE][0]['value'] = preg_replace_callback("|(href=\"?[a-zA-Z/]+:node/)(\d+)|", 'self::getDestinationNid', $node->body[LANGUAGE_NONE][0]['value']);
+    $node->body[LANGUAGE_NONE][0]['value'] = preg_replace_callback("|(href=\"?[a-zA-Z/]+:)([nodefaq]+/)(\d+)|", 'self::getDestinationNid', $node->body[LANGUAGE_NONE][0]['value']);
+    //There don't seem to be bad links in the summaries, or summaries aren't displayed
+    //$node->body[LANGUAGE_NONE][0]['summary'] = preg_replace_callback("|(href=\"?[a-zA-Z/]+:node/)(\d+)|", 'self::getDestinationNid', $node->body[LANGUAGE_NONE][0]['summary']);
 
+
+    //Replace href=foo.com/files/bar with href=foo.com/sites/default/files/bar
+    //but don't replace href=foo.com/sites/default/files/bar
+    $node->body[LANGUAGE_NONE][0]['value'] = preg_replace("|(href=\"?[a-zA-Z\./:\d]*(?<!sites/default/))files/([^>]+)|", '\\1sites/default/files/\\2', $node->body[LANGUAGE_NONE][0]['value']);
+
+    //Remove "../../" in urls
+    $node->body[LANGUAGE_NONE][0]['value'] = preg_replace("|(href=\"?[a-zA-Z:/.\d]*)(\.\./\.\./)([^>]+)|", "$1$3", $node->body[LANGUAGE_NONE][0]['value']);
+    //Remove "../" in urls
+    $node->body[LANGUAGE_NONE][0]['value'] = preg_replace("|(href=\"?[a-zA-Z:/.\d]*)(\.\./)([^>]+)|", "$1$3", $node->body[LANGUAGE_NONE][0]['value']);
 
     return TRUE;
   }
@@ -68,35 +77,70 @@ class HrwebNodeMigration extends DrupalNode6Migration {
 
     //Find the node_type of the source nid
     $result = Database::getConnection('default', $this->sourceConnection)
-      ->query("SELECT type FROM node WHERE nid=:nid", array(':nid' => $matches[2]));
+      ->query("SELECT type FROM node WHERE nid=:nid", array(':nid' => $matches[3]));
     if ($result) {
       $source_type = $result->fetchField();
     }
 
-    /*
-     * Find the migration that operates on $source_type.
-     * The nid that is linked to in the body may or may not be of the same
-     * content-type (and migration) as the node that we are operating on. E.g.
-     * a Basic Page may link to a Book Page.
-     */
-    $migrations = $this->getMigrations();
     $migration_machine_name = FALSE;
-    while (list($k, $v) = each($migrations)) {
-      if ($v->sourceType == $source_type) {
-        $migration_machine_name = $k;
-        break;
+
+    /*
+     * If the path contains 'faq/' we know it's a Faq node handled by the Faq
+     * migration.  Otherwise, find the migration that matches the $source_type
+     */
+    if (strpos($matches[2], 'faq/') !== FALSE) {
+      $migration_machine_name = 'Faq';
+    }
+    else {
+      /*
+       * Find the migration that operates on $source_type.
+       * The nid that is linked to in the body may or may not be of the same
+       * content-type (and migration) as the node that we are operating on. E.g.
+       * a Basic Page may link to a Book Page.
+       */
+      $migrations = $this->getMigrations();
+      while (list($k, $v) = each($migrations)) {
+        if ($v->sourceType == $source_type) {
+          $migration_machine_name = $k;
+          break;
+        }
       }
     }
 
-    //Find the destination nid that corresponds to the source nid
-    if ($migration_machine_name) {
-      $dest_nid = parent::handleSourceMigration($migration_machine_name, $matches[2]);
+
+    if ($migration_machine_name == 'Faq') {
+      // Is this a link to an faq sub-category or to an individual faq node?
+      // Is it a sub category link?
+      $sub_cat = FALSE;
+      $result = Database::getConnection('default', $this->sourceConnection)
+        ->query("SELECT name FROM term_data WHERE tid=:tid", array(':tid' => $matches[3]));
+      if ($result) {
+        $sub_cat = $result->fetchField();
+      }
+
+      if ($sub_cat) {
+        //D7 to link to a faq sub-category it's faq-page/$tid
+        $matches[2] = 'faq-page/';
+        //'faqs' is the machine name for the FAQ taxonomy migration
+        $dest_id = parent::handleSourceMigration('faqs', $matches[3]);
+      }
+      else {
+        //Not a sub-category link, so assume it's a link to an individual faq
+        //'Faq' is the machine name for the FAQ node migration
+        $matches[2] = 'node/';
+        $dest_id = parent::handleSourceMigration('Faq', $matches[3]);
+      }
+
+    }
+    elseif ($migration_machine_name !== FALSE) {
+      //Find the destination nid that corresponds to the source nid
+      $dest_id = parent::handleSourceMigration($migration_machine_name, $matches[3]);
     }
     else {
-      $dest_nid = "not-found";
-      drupal_set_message("Source nid=" . $matches[2] . " of type $source_type could not be associated with a migration.", "error");
+      $dest_id = "not-found";
+      drupal_set_message("Source nid=" . $matches[3] . " of type $source_type could not be associated with a migration.", "error");
     }
-    return $matches[1] . $dest_nid;
+    return $matches[1] . $matches[2] . $dest_id;
   }
 
   private function getMigrations() {
@@ -250,8 +294,12 @@ class HrwebFaqMigration extends HrwebNodeMigration {
                          key 'PRIMARY'
      */
     if (module_exists('faq')) {
-      module_disable(array('faq'));
-      drupal_set_message("Now, now Drupal, those module disable/enable lines were not errors. --Brian");
+      //Set pathauto setting from source site
+      if (variable_get('pathauto_node_faq_pattern', NULL) != 'faq/[node:nid]') {
+        variable_set('pathauto_node_faq_pattern', 'faq/[node:nid]');
+      }
+      //module_disable(array('faq'));
+      //drupal_set_message("Now, now Drupal. Those module disable/enable lines were not errors. --Brian");
     }
   }
 
@@ -264,7 +312,24 @@ class HrwebFaqMigration extends HrwebNodeMigration {
      * Since we just imported faq content, you probably want this module
      * enabled so you can test things out.
      */
-    module_enable(array('faq'));
+    //module_enable(array('faq'));
+
+    //redirect the D6 url for the Faq page to the D7 version
+    if (module_exists('redirect')) {
+      $redirect = new stdClass();
+      redirect_object_prepare(
+        $redirect,
+        array(
+          'source' => 'faq',
+          'source_options' => array(),
+          'redirect' => 'faq-page',
+          'redirect_options' => array(),
+          'language' => LANGUAGE_NONE,
+        )
+      );
+      redirect_save($redirect);
+    }
+
   }
 
   /**
@@ -275,6 +340,12 @@ class HrwebFaqMigration extends HrwebNodeMigration {
     db_truncate('faq_questions')->execute();
     drupal_set_message("Truncated faq_questions table!");
     drupal_set_message("Partial rollbacks of Faq are NOT supported.  Don't attempt migrate-rollback with arguments like --idlist.", "warning");
+
+    if (module_exists('redirect')) {
+      // if you don't remove you'll get "duplicate entry for key on next import."
+      redirect_delete_by_path('faq-page');
+    }
+
   }
 
   /**
