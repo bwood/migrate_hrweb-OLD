@@ -42,6 +42,19 @@ class HrwebNodeMigration extends DrupalNode6Migration {
     return $output;
   }
 
+  /**
+   * Code to run before first row is imported
+   */
+  public function preImport() {
+    if (module_exists('redirect')) {
+      //Settings for /admin/config/search/path/patterns
+      variable_set('pathauto_node_pattern', '[node:menu-link:parents:join-path]/[node:title]');
+      variable_set('pathauto_node_panopoly_page_pattern', '[node:menu-link:parents:join-path]/[node:title]');
+    }
+
+
+  }
+
   /*
    * When you transform the contents of a field, you seem to need to use prepare() as opposed to prepareRow()
    */
@@ -285,21 +298,10 @@ class HrwebFaqMigration extends HrwebNodeMigration {
    */
   public function preImport() {
     parent::preImport();
-    /*
-     * If the faq module is enabled, faq_insert() and/or faq_update() may try to
-     * run resulting in migrate log messages like:
-     *       2461        Undefined property: stdClass::$detailed_question
-             2461        SQLSTATE[23000]: Integrity constraint violation:
-                         1062 Duplicate entry '8525-9641' for
-                         key 'PRIMARY'
-     */
-    if (module_exists('faq')) {
-      //Set pathauto setting from source site
-      if (variable_get('pathauto_node_faq_pattern', NULL) != 'faq/[node:nid]') {
-        variable_set('pathauto_node_faq_pattern', 'faq/[node:nid]');
-      }
-      //module_disable(array('faq'));
-      //drupal_set_message("Now, now Drupal. Those module disable/enable lines were not errors. --Brian");
+    if ((module_exists('faq') && module_exists('redirect'))) {
+      //Set paths at /admin/config/search/path/patterns
+      variable_set('pathauto_node_faq_pattern', 'faq/[node:nid]');
+      variable_set('pathauto_faq_pattern', 'faq/[term:name]');
     }
   }
 
