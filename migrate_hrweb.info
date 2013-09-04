@@ -12,6 +12,8 @@ dependencies[] = redirect
 
 files[] = node.inc
 files[] = menu.inc
+files[] = redirect.inc
+;files[] = ucb_drupal.inc
 
 
 

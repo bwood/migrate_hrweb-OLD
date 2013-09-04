@@ -234,7 +234,7 @@ function migrate_hrweb_register_migrations() {
   }
 
   /** Menus **/
-  //
+  $common_arguments['group_name'] = "Menus";
   $menu_arguments = $common_arguments + array(
   'description' => t('Migration of menus from Drupal 6'),
   'machine_name' => 'Menu',
@@ -255,6 +255,17 @@ function migrate_hrweb_register_migrations() {
   );
   Migration::registerMigration('HrwebMenuLinksMigration', $menu_links_arguments['machine_name'],
   $menu_links_arguments);
+
+  $common_arguments['group_name'] = "Redirects";
+  /** Redirects **/
+  $redirect_arguments = $common_arguments + array(
+      'description' => t('Migration of Path Redirect module data from Drupal 6 to Redirect module data in Drupal 7'),
+      'machine_name' => 'Redirect',
+    );
+  Migration::registerMigration('HrwebPathRedirectMigration', $redirect_arguments['machine_name'], $redirect_arguments);
+ // Migration::registerMigration('UcbDrupal');
+
+
 
 }
 

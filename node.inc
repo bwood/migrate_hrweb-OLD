@@ -10,7 +10,8 @@ class HrwebNodeMigration extends DrupalNode6Migration {
     //Map D6 input formats to OB text formats
     $this->addFieldMapping('body:format', 'format')->callbacks(array(
       $this,
-      'migrate_hrweb_get_text_format_by_id'
+      'migrate_hrweb_get_text_format_by_id',
+      FALSE
     ));
 
   }
@@ -174,7 +175,7 @@ class HrwebAvccornerMigration extends HrwebNodeMigration {
     parent::__construct($arguments);
 
     //Map non-standard body field
-    $this->addFieldMapping('body', 'field_body');
+    $this->addFieldMapping('body', 'field_body', FALSE);
 
   }
 }
@@ -185,7 +186,7 @@ class HrwebGlossaryMigration extends HrwebNodeMigration {
     parent::__construct($arguments);
 
     //Map non-standard body field
-    $this->addFieldMapping('body', 'field_body');
+    $this->addFieldMapping('body', 'field_body', FALSE);
 
   }
 }
@@ -196,7 +197,7 @@ class HrwebRelatedLinkMigration extends HrwebNodeMigration {
     parent::__construct($arguments);
 
     //Map non-standard body field
-    $this->addFieldMapping('body', 'field_body');
+    $this->addFieldMapping('body', 'field_body', FALSE);
 
     //Related links categoies vocab id = 5 in source
     $this->addFieldMapping('field_link_category', 5)
@@ -234,14 +235,14 @@ class HrwebSlideMigration extends HrwebNodeMigration {
     parent::__construct($arguments);
 
     //Map non-standard body field
-    $this->addFieldMapping('field_slide_pager_item_text', 'field_pager_item_text');
-    $this->addFieldMapping('field_slide_url', 'field_url');
+    $this->addFieldMapping('field_slide_pager_item_text', 'field_pager_item_text', FALSE);
+    $this->addFieldMapping('field_slide_url', 'field_url', FALSE);
 
-    $this->addFieldMapping('field_slide_image', 'field_image')
+    $this->addFieldMapping('field_slide_image', 'field_image', FALSE)
       ->sourceMigration('AllFiles');
-    $this->addFieldMapping('field_slide_image:file_class')
+    $this->addFieldMapping('field_slide_image:file_class', FALSE)
       ->defaultValue('MigrateFileFid');
-    $this->addFieldMapping('field_slide_image:preserve_files')
+    $this->addFieldMapping('field_slide_image:preserve_files', FALSE)
       ->defaultValue(TRUE);
   }
 }
@@ -251,7 +252,7 @@ class HrwebFaqMigration extends HrwebNodeMigration {
     parent::__construct($arguments);
 
     //Related links categoies vocab id = 5 in source
-    $this->addFieldMapping('field_faq_category', 4)
+    $this->addFieldMapping('field_faq_category', 4, FALSE)
       ->sourceMigration('faqs')
       ->arguments(array('source_type' => 'tid'));
 
