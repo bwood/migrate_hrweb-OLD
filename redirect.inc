@@ -238,10 +238,14 @@ class MigrateDestinationRedirect extends MigrateDestination {
     // Leverage common utility functions
     // TODO: pass in the source_connection and source_version from .module?
     $ucbDrupal = new UcbDrupal($node_arguments);
+
     // make sure the nids in the redirects are mapped to the corresponding
     // nids in the destination db
     $redirect->redirect = $ucbDrupal->translateNids($redirect->redirect);
-    $redirect->source = $ucbDrupal->translateNids($redirect->source);
+    // It doesn't make sense to translate the nids on the redirect source paths.
+    // If in the D6 we were redirecting faq/123 to foo/bar, we should continue
+    // doing that same redirect on the D7 site.
+    
 
     // only make file path corrections on the redirect
     $redirect->redirect = $ucbDrupal->correctFilePaths($redirect->redirect);

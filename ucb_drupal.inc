@@ -143,7 +143,7 @@ class UcbDrupal extends DrupalNode6Migration {
       else {
         //Not a sub-category link, so assume it's a link to an individual faq
         //'Faq' is the machine name for the FAQ node migration
-        $matches[2] = 'node/';
+        $matches[1] = 'node';
         $dest_id = parent::handleSourceMigration('Faq', $matches[2]);
       }
 
