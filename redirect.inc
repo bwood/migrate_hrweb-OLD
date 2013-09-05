@@ -207,34 +207,51 @@ class MigrateDestinationRedirect extends MigrateDestination {
    */
   public
   function prepare($redirect, stdClass $row) {
-    // We do nothing here but allow child classes to act.
+
+    // Remove encoded chars from string like %20 which often occurs in links
+    // to uploaded files named with spaces
+    $redirect->redirect = rawurldecode($redirect->redirect);
+    $redirect->source = rawurldecode($redirect->source);
+
+    /**
+     * Correct target paths containing "node/\d+
+     *
+     * In order to refactor translateNids() and related methods to UcbDrupal()--
+     * a general utility class--we have to make UcbDrupal extend
+     * DrupalNode6Migration. That means that UcbDrupal() requires minimal
+     * arguments (source_connection, source_version, source_type,
+     * destination_type) in order for the constructor to run.
+     *
+     * source_type and destination_type aren't actually used by UcbDrupal(),
+     * in fact they can be NULL.
+     *
+     * @see UcbDrupal
+     */
+    $node_arguments = array(
+      'source_connection' => 'legacy',
+      'source_version' => 6,
+      'source_type' => NULL,
+      'destination_type' => NULL,
+      'description' => 'UcbDrupal utilities.', //prevent a migrate message
+    );
+
+    // Leverage common utility functions
+    // TODO: pass in the source_connection and source_version from .module?
+    $ucbDrupal = new UcbDrupal($node_arguments);
+    // make sure the nids in the redirects are mapped to the corresponding
+    // nids in the destination db
+    $redirect->redirect = $ucbDrupal->translateNids($redirect->redirect);
+    $redirect->source = $ucbDrupal->translateNids($redirect->source);
+
+    // only make file path corrections on the redirect
+    $redirect->redirect = $ucbDrupal->correctFilePaths($redirect->redirect);
+
+    // Allow child classes to act.
     $migration = Migration::currentMigration();
     $redirect->migrate = array(
       'machineName' => $migration->getMachineName(),
     );
 
-    /*
-     * Correct target paths containing "node/\d+
-     *
-     * Refactor into UcbDrupal class so that I don't have to duplicate node.inc
-     * getDestinationNid() etc
-     *
-     * Pass $this into UcbDrupal as a kludge to have the $this->sourceConnection etc.
-     *
-     * Problem: we can't getMigrations from here.
-     * Should we extend DrupalNodeMigration instead of DrupalMigration?
-
-    $ucbDrupal = new UcbDrupal(array('caller_object' => $this, 'migrations' => $this->getMigrations()));
-    $redirect->redirect = $ucbDrupal->translateNids($redirect->redirect);
-    $redirect->source = $ucbDrupal->translateNids($redirect->source);
-     */
-    // Correct NIDs for node/ and faq/ paths.
-    /*
-    $redirect->redirect = preg_replace_callback("|([^/]+)(?<=node)(/\d+)|", 'self::getDestinationNid', $redirect->redirect);
-    $redirect->redirect = preg_replace_callback("|([^/]+)(?<=faq)(/\d+)|", 'self::getDestinationNid', $redirect->redirect);
-    $redirect->source = preg_replace_callback("|([^/]+)(?<=node)(/\d+)|", 'self::getDestinationNid', $redirect->source);
-    $redirect->source = preg_replace_callback("|([^/]+)(?<=faq)(/\d+)|", 'self::getDestinationNid', $redirect->source);
-    */
     // Call any general handlers.
     migrate_handler_invoke_all('redirect', 'prepare', $redirect, $row);
     // Then call any prepare handler for this specific Migration.
@@ -243,8 +260,7 @@ class MigrateDestinationRedirect extends MigrateDestination {
     }
   }
 
-  public
-  function complete($redirect, stdClass $row) {
+  public function complete($redirect, stdClass $row) {
     // We do nothing here but allow child classes to act.
     $migration = Migration::currentMigration();
     $redirect->migrate = array(
@@ -283,8 +299,7 @@ class MigrateDestinationRedirect extends MigrateDestination {
    * @param $rid
    *  ID of the redirect about to be deleted.
    */
-  public
-  function prepareRollback($rid) {
+  public function prepareRollback($rid) {
     // We do nothing here but allow child classes to act.
     $migration = Migration::currentMigration();
     // Call any general handlers.
@@ -301,8 +316,7 @@ class MigrateDestinationRedirect extends MigrateDestination {
    * @param $rid
    *  ID of the redirecte which has been deleted.
    */
-  public
-  function completeRollback($rid) {
+  public function completeRollback($rid) {
     // We do nothing here but allow child classes to act.
     $migration = Migration::currentMigration();
     // Call any general handlers.
@@ -312,27 +326,4 @@ class MigrateDestinationRedirect extends MigrateDestination {
       $migration->completeRollback($rid);
     }
   }
-
-  /**
-   * List all migrations and the content types on which they operate.
-   *
-   * @return array
-   *   keys = migration machine names
-   *   values = content/entity types from the source db
-   */
-  private function getMigrations() {
-    //Only look up migrations once.
-    static $migrations = array();
-    if (count($migrations) == 0) {
-      $migrations = migrate_migrations();
-      drupal_set_message("Looked up migrations. (This should only happen once.)");
-    }
-
-    $migration_types = array();
-    while (list($k, $v) = each($migrations)) {
-      $migration_types[$k] = $v->sourceType;
-    }
-    return $migration_types;
-  }
-
 }
