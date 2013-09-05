@@ -10,8 +10,7 @@ class HrwebNodeMigration extends DrupalNode6Migration {
     //Map D6 input formats to OB text formats
     $this->addFieldMapping('body:format', 'format')->callbacks(array(
       $this,
-      'migrate_hrweb_get_text_format_by_id',
-      FALSE
+      'migrate_hrweb_get_text_format_by_id'
     ));
 
   }
