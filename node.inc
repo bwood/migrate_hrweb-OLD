@@ -16,6 +16,9 @@ class HrwebNodeMigration extends DrupalNode6Migration {
       'migrate_hrweb_get_text_format_by_id'
     ));
     $this->addFieldMapping('path', 'path', FALSE);
+    // this line requires the deprecated module migrate_extras
+    // https://jira.berkeley.edu/browse/DRUPALOPS-101?focusedCommentId=158227&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-158227
+    // https://drupal.org/node/2023657#comment-7562763
     $this->addFieldMapping('pathauto', NULL, FALSE)->defaultValue(0);
 
   }

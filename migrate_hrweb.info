@@ -7,6 +7,8 @@ version = "7.x-0.1"
 
 dependencies[] = migrate
 dependencies[] = migrate_d2d
+; migrate_extras, though deprecated, is needed. see comments in node.inc
+dependencies[] = migrate_extras
 dependencies[] = book
 dependencies[] = redirect
 
