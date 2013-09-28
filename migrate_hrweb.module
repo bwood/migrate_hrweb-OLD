@@ -11,7 +11,11 @@
  */
 function migrate_hrweb_flush_caches() {
   migrate_hrweb_register_migrations();
+  $x = __DIR__;
+
 }
+
+
 
 
 /**
@@ -124,16 +128,24 @@ function migrate_hrweb_register_migrations() {
 
   /*** Files ***/
   $common_arguments['group_name'] = "Files";
+
+  //Assumes both sites use same public files path
+  $files_public_path = variable_get('file_public_path', '/sites/default/files');
+  $source_site_name = 'hrweb';
+
   $file_arguments = array(
     array(
       'class_name' => 'DrupalFile6Migration',
       'machine_name' => 'AllFiles',
       'description' => t('Import Drupal 6 files'),
       'default_uid' => 1,
-      'source_dir' =>  variable_get('file_public_path', conf_path() . '/files'),
-      //'destination_dir' => 'public://legacy_files', //defaults to public://
+      //'source_dir' =>  '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
+      'source_dir' =>  preg_replace("@[^/]+/sites/all/modules/.*$@", $source_site_name . '/' . $files_public_path , __DIR__),
     ),
   );
+
+  drupal_set_message("Files migration source absolute path set to: " . $file_arguments[0]['source_dir'] . " If that's not correct edit " . __FILE__ .".", "warning");
+
   $common_file_arguments = $common_arguments + array(
       'user_migration' => 'User',
     );
