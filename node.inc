@@ -408,7 +408,48 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
    * book hierarchy stuff.
    */
   public function query() {
-    $query = parent::query();
+    //$query = parent::query(); //override becuase we don't want the Order By applied by the parent and since the object is protected, we can't just unset it.
+
+    //copy begin
+    $query = Database::getConnection('default', $this->sourceConnection)
+      ->select('node', 'n')
+      ->fields('n', array('nid', 'vid', 'language', 'title',
+        'uid', 'status', 'created', 'changed', 'comment', 'promote',
+        'moderate', 'sticky', 'tnid', 'translate'))
+      ->condition('n.type', $this->sourceType);
+//      ->orderBy('n.changed'); // <-----------------Remove order
+    $query->innerJoin('node_revisions', 'nr', 'n.vid=nr.vid');
+    $query->fields('nr', array('body', 'teaser', 'format'));
+    // Pick up simple CCK fields
+    $cck_table = 'content_type_' . $this->sourceType;
+    if (Database::getConnection('default', $this->sourceConnection)
+      ->schema()->tableExists($cck_table)) {
+      $query->leftJoin($cck_table, 'f', 'n.vid=f.vid');
+      // The main column for the field should be rendered with
+      // the field name, not the column name (e.g., field_foo rather
+      // than field_foo_value).
+      $field_info = $this->version->getSourceFieldInfo();
+      foreach ($field_info as $field_name => $info) {
+        if (isset($info['columns']) && !$info['multiple'] && $info['db_storage']) {
+          $i = 0;
+          foreach ($info['columns'] as $display_name => $column_name) {
+            if ($i++ == 0) {
+              $query->addField('f', $column_name, $field_name);
+            }
+            else {
+              // The database API won't allow colons in column aliases, so we
+              // will accept the default alias, and fix up the field names later.
+              // Remember how to translate the field names.
+              $clean_name = str_replace(':', '_', $display_name);
+              $this->fixFieldNames[$clean_name] = $display_name;
+              $query->addField('f', $column_name);
+            }
+          }
+        }
+      }
+    }
+    //copy end
+
     // Add in book parent child relationships.
     $query->join('book', 'b', 'n.nid = b.nid');
     $query->addField('b', 'bid', 'book_id');
@@ -416,11 +457,12 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
     $query->addField('ml', 'weight', 'book_weight');
     //Query extention to get nid of parent from the link path in menu_links (could get it elsewhere)
     $query->leftJoin('menu_links', 'mm', 'ml.plid = mm.mlid');
-    $query->addField('mm', 'link_path', 'parent_id');
-    // Sort by depth so there is always a parent
+    $query->addExpression('CAST(SUBSTRING(mm.link_path, 6) as UNSIGNED)', 'parent_id');
+    //$query->addExpression('SUBSTRING(mm.link_path, 6)', 'parent_id');
+    // Sort by depth, then parent_id
     $query->orderBy('ml.depth');
-
-    //$x = Database::getConnection()->prefixTables($query);
+    $query->orderBy('parent_id');
+    $x = Database::getConnection()->prefixTables($query);
     return $query;
   }
 
@@ -444,7 +486,9 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
     $node->book['weight'] = $row->book_weight;
 
     // We strip the "node/"-part from the link_path
-    $parent_id = str_replace("node/", "", $row->parent_id);
+    //$parent_id = str_replace("node/", "", $row->parent_id);
+    $parent_id = $row->parent_id;
+
     // If there is a parent we lookup the migrated node
     if (isset($parent_id) && $parent_id > 0) {
       $parent_node = parent::handleSourceMigration('BookPage', $parent_id);
@@ -455,19 +499,27 @@ class HrwebBookPageMigration extends HrwebNodeMigration {
         ->execute()
         ->fetchAssoc();
       $plid = $query['mlid'];
+
+      //if $parent_node is a stub it won't have a plid yet, make sure it has one
+      /*
+      if (($plid === NULL) && ($parent_node > 0)) {
+
+      }
+*/
       // We add the parent mlid (plid)
       $node->book['plid'] = $plid;
-      /**
-       * left off
-       * $plid is null when row->nid=78 bc mlid hasn't been created for 77
-       */
     }
 
     _book_update_outline($node);
     node_save($node);
 
   }
+/*
+  protected function createStub($migration, $source_key) {
+    $x=1;
 
+  }
+*/
   /**
    * Returns the book id for the book that this Page is part of
    *

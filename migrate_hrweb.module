@@ -263,7 +263,7 @@ function migrate_hrweb_register_migrations() {
   'machine_name' => 'MenuLinks',
   'menu_migration' => $menu_arguments['machine_name'],
       //'Faq'
-  'node_migrations' => array('Avccorner', 'Page', 'PageFile', 'BookPage', 'NewsItem', 'GlossaryItem', 'SlideItem', 'RelatedLink', 'RelatedLinkAttachment',),
+  'node_migrations' => array('Avccorner', 'Page', 'PageFile', 'NewsItem', 'GlossaryItem', 'SlideItem', 'RelatedLink', 'RelatedLinkAttachment',), //'BookPage',
   'term_migrations' => array('faqs', 'glossary', 'news_item', 'primary_navigation_section', 'secondary_navigation_section', 'related_links_categories'),
   );
   Migration::registerMigration('HrwebMenuLinksMigration', $menu_links_arguments['machine_name'],
