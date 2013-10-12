@@ -140,7 +140,9 @@ function migrate_hrweb_register_migrations() {
       'description' => t('Import Drupal 6 files'),
       'default_uid' => 1,
       //'source_dir' =>  '/Users/bwood/Sites/pantheon/hrweb/sites/default/files',
+      //'source_dir' => variable_get('file_public_path', conf_path() . '/files'),
       //TODO should derive '/sites/all/modules' or equivalent using drupal_get_path(). Could be installed elsewhere.
+      //Note: Below won't work if symlinked (during testing)
       'source_dir' =>  preg_replace("@[^/]+/sites/all/modules/.*$@", $source_site_name . '/' . $files_public_path , __DIR__),
     ),
   );
