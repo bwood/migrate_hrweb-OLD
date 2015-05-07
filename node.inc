@@ -45,7 +45,7 @@ class HrwebNodeMigration extends DrupalNode6Migration {
         break;
 
       default:
-        $output = 'editor';
+        $output = 'panopoly_wysiwyg_text';
     }
     return $output;
   }
@@ -262,6 +262,7 @@ class HrwebFaqMigration extends HrwebNodeMigration {
     $this->addFieldMapping('field_faq_category', 4, FALSE)
       ->sourceMigration('faqs')
       ->arguments(array('source_type' => 'tid'));
+    $this->addFieldMapping('field_detailed_question', 'detailed_question');
 
   }
 
@@ -282,7 +283,7 @@ class HrwebFaqMigration extends HrwebNodeMigration {
     $query->addField('fq', 'detailed_question');
     $query->addField('w', 'weight');
     $query->addField('w', 'tid');
-    //$x = Database::getConnection()->prefixTables($query);
+    $x = Database::getConnection()->prefixTables($query);
     return $query;
   }
 
